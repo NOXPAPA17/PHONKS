@@ -1,0 +1,320 @@
+--// NØX PAPA RGB MUSIC PLAYER V3
+--// Xeno client GUI
+--// Audio ID: 112372841743482
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local SoundService = game:GetService("SoundService")
+local CoreGui = game:GetService("CoreGui")
+
+local player = Players.LocalPlayer
+
+if not player then
+warn("[NOX] Player not found. Execute after joining the game.")
+return
+end
+
+--// FIND GUI PARENT
+local guiParent
+
+pcall(function()
+if typeof(gethui) == "function" then
+guiParent = gethui()
+end
+end)
+
+if not guiParent then
+guiParent = CoreGui
+end
+
+--// CREATE GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "NOX_MUSIC_V3"
+gui.ResetOnSpawn = false
+gui.DisplayOrder = 999999
+gui.IgnoreGuiInset = true
+
+local success, err = pcall(function()
+gui.Parent = guiParent
+end)
+
+if not success then
+warn("[NOX] GUI creation failed: " .. tostring(err))
+return
+end
+
+--// MASTER BUTTON
+local master = Instance.new("TextButton")
+master.Name = "NOX_MASTER"
+master.Size = UDim2.fromOffset(54, 54)
+master.Position = UDim2.new(0, 20, 0.5, -27)
+master.BackgroundColor3 = Color3.fromRGB(12, 12, 20)
+master.Text = "🤣"
+master.TextSize = 26
+master.Font = Enum.Font.GothamBold
+master.TextColor3 = Color3.new(1, 1, 1)
+master.Parent = gui
+
+Instance.new("UICorner", master).CornerRadius = UDim.new(1, 0)
+
+local masterStroke = Instance.new("UIStroke")
+masterStroke.Thickness = 2
+masterStroke.Parent = master
+
+--// MUSIC PANEL
+local border = Instance.new("Frame")
+border.Name = "NOX_PANEL"
+border.Size = UDim2.fromOffset(280, 155)
+border.Position = UDim2.new(0.5, -140, 0.5, -77)
+border.BackgroundColor3 = Color3.fromRGB(255, 0, 130)
+border.BorderSizePixel = 0
+border.Parent = gui
+
+Instance.new("UICorner", border).CornerRadius = UDim.new(0, 12)
+
+local panel = Instance.new("Frame")
+panel.Position = UDim2.fromOffset(3, 3)
+panel.Size = UDim2.new(1, -6, 1, -6)
+panel.BackgroundColor3 = Color3.fromRGB(13, 13, 22)
+panel.BorderSizePixel = 0
+panel.Parent = border
+
+Instance.new("UICorner", panel).CornerRadius = UDim.new(0, 10)
+
+--// LABEL HELPER
+local function makeLabel(text, position, size, textSize, color)
+local label = Instance.new("TextLabel")
+label.BackgroundTransparency = 1
+label.Position = position
+label.Size = size
+label.Text = text
+label.TextSize = textSize
+label.TextColor3 = color
+label.Font = Enum.Font.GothamBold
+label.TextXAlignment = Enum.TextXAlignment.Left
+label.Parent = panel
+return label
+end
+
+makeLabel(
+"♪ NØX PAPA MUSIC",
+UDim2.fromOffset(10, 7),
+UDim2.new(1, -20, 0, 27),
+16,
+Color3.new(1, 1, 1)
+)
+
+makeLabel(
+"ASSET: 112372841743482",
+UDim2.fromOffset(10, 36),
+UDim2.new(1, -20, 0, 20),
+11,
+Color3.fromRGB(180, 190, 210)
+)
+
+local status = makeLabel(
+"STATUS: READY",
+UDim2.fromOffset(10, 59),
+UDim2.new(1, -20, 0, 20),
+11,
+Color3.fromRGB(0, 255, 170)
+)
+
+--// BUTTON HELPER
+local function makeButton(text, x, color)
+local button = Instance.new("TextButton")
+button.Position = UDim2.fromOffset(x, 94)
+button.Size = UDim2.fromOffset(120, 36)
+button.BackgroundColor3 = color
+button.Text = text
+button.TextSize = 13
+button.TextColor3 = Color3.new(1, 1, 1)
+button.Font = Enum.Font.GothamBold
+button.Parent = panel
+
+Instance.new("UICorner", button).CornerRadius =
+UDim.new(0, 8)
+
+return button
+end
+
+local startButton = makeButton(
+"▶ START",
+10,
+Color3.fromRGB(0, 165, 120)
+)
+
+local stopButton = makeButton(
+"■ STOP",
+140,
+Color3.fromRGB(190, 40, 75)
+)
+
+--// RGB ANIMATION
+task.spawn(function()
+local hue = 0
+
+while gui.Parent do
+hue = (hue + 0.008) % 1
+
+local color = Color3.fromHSV(hue, 1, 1)
+border.BackgroundColor3 = color
+masterStroke.Color = color
+
+task.wait(0.035)
+end
+end)
+
+--// DRAGGABLE PANEL
+local function makeDraggable(frame, handle)
+local dragging = false
+local startPointer
+local startPosition
+local activeInput
+
+handle.InputBegan:Connect(function(input)
+if input.UserInputType == Enum.UserInputType.MouseButton1
+or input.UserInputType == Enum.UserInputType.Touch then
+
+dragging = true
+activeInput = input
+startPointer = input.Position
+startPosition = frame.Position
+end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+if not dragging then
+return
+end
+
+local isMouse =
+input.UserInputType == Enum.UserInputType.MouseMovement
+and activeInput
+and activeInput.UserInputType == Enum.UserInputType.MouseButton1
+
+local isTouch =
+input == activeInput
+and activeInput
+and activeInput.UserInputType == Enum.UserInputType.Touch
+
+if isMouse or isTouch then
+local delta = input.Position - startPointer
+
+frame.Position = UDim2.new(
+startPosition.X.Scale,
+startPosition.X.Offset + delta.X,
+startPosition.Y.Scale,
+startPosition.Y.Offset + delta.Y
+)
+end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+if not activeInput then
+return
+end
+
+if input == activeInput
+or input.UserInputType == Enum.UserInputType.MouseButton1 then
+dragging = false
+activeInput = nil
+end
+end)
+end
+
+makeDraggable(border, panel)
+makeDraggable(master, master)
+
+--// MASTER SHOW / HIDE
+local masterDown = false
+local masterMoved = false
+local masterStart
+local masterPosition
+
+master.InputBegan:Connect(function(input)
+if input.UserInputType == Enum.UserInputType.MouseButton1
+or input.UserInputType == Enum.UserInputType.Touch then
+
+masterDown = true
+masterMoved = false
+masterStart = input.Position
+masterPosition = master.Position
+end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+if not masterDown then
+return
+end
+
+if input.UserInputType == Enum.UserInputType.MouseMovement
+or input.UserInputType == Enum.UserInputType.Touch then
+
+if (input.Position - masterStart).Magnitude > 10 then
+masterMoved = true
+end
+end
+end)
+
+master.Activated:Connect(function()
+if not masterMoved then
+border.Visible = not border.Visible
+end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+if input.UserInputType == Enum.UserInputType.MouseButton1
+or input.UserInputType == Enum.UserInputType.Touch then
+
+masterDown = false
+end
+end)
+
+--// MUSIC
+local music = Instance.new("Sound")
+music.Name = "NOX_MUSIC_AUDIO"
+music.SoundId = "rbxassetid://112372841743482"
+music.Volume = 1
+music.Looped = true
+music.Parent = SoundService
+
+startButton.Activated:Connect(function()
+status.Text = "STATUS: REQUESTING AUDIO..."
+status.TextColor3 = Color3.fromRGB(255, 210, 0)
+
+local ok, message = pcall(function()
+music:Play()
+end)
+
+if not ok then
+status.Text = "STATUS: AUDIO ERROR"
+warn("[NOX] Audio error: " .. tostring(message))
+return
+end
+
+task.delay(2, function()
+if not gui.Parent then
+return
+end
+
+if music.IsPlaying then
+status.Text = "STATUS: PLAYING ♪"
+status.TextColor3 = Color3.fromRGB(0, 255, 170)
+else
+status.Text = "STATUS: AUDIO NOT PLAYING"
+status.TextColor3 = Color3.fromRGB(255, 70, 90)
+end
+end)
+end)
+
+stopButton.Activated:Connect(function()
+pcall(function()
+music:Stop()
+end)
+
+status.Text = "STATUS: STOPPED"
+status.TextColor3 = Color3.fromRGB(255, 90, 100)
+end)
+
+print("[NOX] NØX PAPA MUSIC PLAYER V3 CREATED")
